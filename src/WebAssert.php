@@ -10,6 +10,7 @@
 
 namespace Behat\Mink;
 
+use Behat\Mink\Element\DocumentElement;
 use Behat\Mink\Element\Element;
 use Behat\Mink\Element\ElementInterface;
 use Behat\Mink\Element\NodeElement;
@@ -253,19 +254,21 @@ class WebAssert
      *
      * @throws ResponseTextException
      */
-    public function pageTextContains($text, $timeout = 5)
+    public function pageTextContains($text, $timeout = 10)
     {
         $regex = '/'.preg_quote($text, '/').'/ui';
         $actual = null;
-        $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
-            $actual = $givenNode->getText();
+        $callback = function (DocumentElement $document) use ($regex, &$actual) {
+            $actual = $document->getText();
             $actual = preg_replace('/\s+/u', ' ', $actual);
 
             return (bool) preg_match($regex, $actual);
         };
 
-        $message = sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual);
-        $this->assertResponseText($this->session->getPage()->waitFor($timeout, $callback), $message);
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual)
+        );
     }
 
     /**

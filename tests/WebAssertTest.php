@@ -340,9 +340,13 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->any())
             ->method('getText')
-            ->will($this->returnValue("Some  page\n\ttext"))
+            ->will($this->onConsecutiveCalls(
+                'nope',
+                'null',
+                'Some  page\n\ttext'
+            ))
         ;
 
         $this->assertCorrectAssertion('pageTextContains', array('PAGE text'));
