@@ -47,14 +47,17 @@ class WebAssert
      *
      * @throws ExpectationException
      */
-    public function addressEquals($page, $timeout = 10)
+    public function addressEquals($page, $timeout = 3)
     {
-        $cleanedUrl = $this->cleanUrl($page);
-        $message = sprintf('Current page is "%s", but "%s" expected.', $this->getCurrentUrlPath(), $this->cleanUrl($page));
+        $expected = $this->cleanUrl($page);
+        $actual = null;
+
         $this->assert(
-            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl) {
-                return $this->getCurrentUrlPath() === $cleanedUrl;
-            }), $message
+            $this->session->getPage()->waitFor($timeout, function () use (&$actual, $expected) {
+                $actual = $this->getCurrentUrlPath();
+                return $actual === $expected;
+            }),
+            sprintf('Current page is "%s", but "%s" expected.', $actual, $expected)
         );
     }
 
