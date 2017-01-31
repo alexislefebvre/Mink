@@ -118,6 +118,8 @@ abstract class Element implements ElementInterface
      */
     public function waitFor($timeout, $callback)
     {
+        throw new \Exception(__FILE__);
+
         if (!is_callable($callback)) {
             throw new \InvalidArgumentException('Given callback is not a valid callable');
         }
