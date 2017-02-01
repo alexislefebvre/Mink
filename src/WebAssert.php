@@ -50,11 +50,13 @@ class WebAssert
     public function addressEquals($page, $timeout = 10)
     {
         $cleanedUrl = $this->cleanUrl($page);
-        $message = sprintf('Current page is "%s", but "%s" expected.', $this->getCurrentUrlPath(), $this->cleanUrl($page));
+        $actual = null;
+
         $this->assert(
-            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl) {
-                return $this->getCurrentUrlPath() === $cleanedUrl;
-            }), $message
+            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl, &$actual) {
+                $actual = $this->getCurrentUrlPath();
+                return $actual === $cleanedUrl;
+            }), sprintf('Current page is "%s", but "%s" expected.', $actual, $cleanedUrl)
         );
     }
 
@@ -68,11 +70,15 @@ class WebAssert
     public function addressNotEquals($page, $timeout = 10)
     {
         $cleanedUrl = $this->cleanUrl($page);
-        $message = sprintf('Current page is "%s", but should not be.', $this->getCurrentUrlPath());
+        $actual = null;
+
         $this->assert(
-            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl) {
-                return $this->getCurrentUrlPath() !== $cleanedUrl;
-            }), $message
+            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl, &$actual) {
+                $actual = $this->getCurrentUrlPath();
+                // TODO Don't fail on first try if address are different.
+                // TODO This condition is true and break the loop.
+                return $actual !== $cleanedUrl;
+            }), sprintf('Current page is "%s", but should not be.', $actual)
         );
     }
 
@@ -262,8 +268,8 @@ class WebAssert
      */
     public function pageTextContains($text, $timeout = 10)
     {
-        $regex  = '/'.preg_quote($text, '/').'/ui';
         $actual = null;
+        $regex  = '/'.preg_quote($text, '/').'/ui';
         $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
             $actual = $givenNode->getText();
             $actual = preg_replace('/\s+/u', ' ', $actual);
@@ -271,8 +277,10 @@ class WebAssert
             return (bool) preg_match($regex, $actual);
         };
 
-        $message = sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual);
-        $this->assertResponseText($this->session->getPage()->waitFor($timeout, $callback), $message);
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The text "%s" was not found anywhere in the text of the current page ("%s").', $text, $actual)
+        );
     }
 
     /**
@@ -300,14 +308,18 @@ class WebAssert
      *
      * @throws ResponseTextException
      */
-    public function pageTextMatches($regex, $timeout = 10)
+    public function pageTextMatches($regex, $timeout = 1)
     {
-        $message = sprintf('The pattern %s was not found anywhere in the text of the current page.', $regex);
-        $callback = function (ElementInterface $givenNode) use ($regex) {
+        $actual = null;
+        $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
             $actual = $givenNode->getText();
             return (bool)preg_match($regex, $actual);
         };
-        $this->assertResponseText($this->session->getPage()->waitFor($timeout, $callback), $message);
+
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The pattern %s was not found anywhere in the text of the current page ("%s").', $regex, $actual)
+        );
     }
 
     /**

@@ -30,16 +30,33 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressEquals()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getCurrentUrl'))
+            ->getMock()
+        ;
+
         $this->session
             ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
+        $this->session
+            ->expects($this->exactly(4))
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php/sub/url?param=true#webapp/nav'))
+            ->will($this->onConsecutiveCalls(
+                '',
+                'http://example.com/script.php/sub/url?param=true#webapp/nav',
+                '',
+                '/sub/url#webapp/nav'
+            ))
         ;
 
         $this->assertCorrectAssertion('addressEquals', array('/sub/url#webapp/nav'));
         $this->assertWrongAssertion(
             'addressEquals',
-            array('sub_url'),
+            array('sub_url', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/sub/url#webapp/nav", but "sub_url" expected.'
         );
@@ -47,27 +64,59 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressEqualsEmptyPath()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getCurrentUrl'))
+            ->getMock()
+        ;
+
+        $this->session
+            ->expects($this->once())
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
         $this->session
             ->expects($this->once())
             ->method('getCurrentUrl')
-            ->willReturn('http://example.com')
+            ->will($this->onConsecutiveCalls(
+                '',
+                'http://example.com'
+            ))
         ;
 
-        $this->assertCorrectAssertion('addressEquals', array('/'));
+        $this->assertCorrectAssertion('addressEquals', array('/', 0.5));
     }
 
     public function testAddressEqualsEndingInScript()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getCurrentUrl'))
+            ->getMock()
+        ;
+
         $this->session
             ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
+        $this->session
+            ->expects($this->exactly(4))
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php'))
+            ->will($this->onConsecutiveCalls(
+                '',
+                'http://example.com/script.php',
+                'http://example.com/script.php',
+                'http://example.com/script.php'
+            ))
         ;
 
         $this->assertCorrectAssertion('addressEquals', array('/script.php'));
         $this->assertWrongAssertion(
             'addressEquals',
-            array('/'),
+            array('/', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/script.php", but "/" expected.'
         );
@@ -75,16 +124,32 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressNotEquals()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getCurrentUrl'))
+            ->getMock()
+        ;
+
         $this->session
             ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
+        $this->session
+            ->expects($this->exactly(3))
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php/sub/url'))
+            ->will($this->onConsecutiveCalls(
+                '',
+                'http://example.com/script.php/sub/url',
+                'http://example.com/script.php/sub/url'
+            ))
         ;
 
         $this->assertCorrectAssertion('addressNotEquals', array('sub_url'));
         $this->assertWrongAssertion(
             'addressNotEquals',
-            array('/sub/url'),
+            array('/sub/url', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/sub/url", but should not be.'
         );
@@ -92,16 +157,33 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressNotEqualsEndingInScript()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->setMethods(array('getCurrentUrl'))
+            ->getMock()
+        ;
+
         $this->session
             ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
+        $this->session
+            ->expects($this->exactly(4))
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php'))
+            ->will($this->onConsecutiveCalls(
+                '',
+                'http://example.com/script.php',
+                'http://example.com/script.php',
+                'http://example.com/script.php'
+            ))
         ;
 
         $this->assertCorrectAssertion('addressNotEquals', array('/'));
         $this->assertWrongAssertion(
             'addressNotEquals',
-            array('/script.php'),
+            array('/script.php', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/script.php", but should not be.'
         );
@@ -330,6 +412,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getText'))
             ->getMock()
         ;
 
@@ -340,17 +423,22 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('getText')
-            ->will($this->returnValue("Some  page\n\ttext"))
+            ->will($this->onConsecutiveCalls(
+                'void',
+                "Some  page\n\ttext",
+                "Some  page\n\ttext",
+                "Some  page\n\ttext"
+            ))
         ;
 
-        $this->assertCorrectAssertion('pageTextContains', array('PAGE text'));
+        $this->assertCorrectAssertion('pageTextContains', array('PAGE text', 0.5));
         $this->assertWrongAssertion(
             'pageTextContains',
-            array('html text'),
+            array('html text', 0.15),
             'Behat\\Mink\\Exception\\ResponseTextException',
-            'The text "html text" was not found anywhere in the text of the current page.'
+            'The text "html text" was not found anywhere in the text of the current page ("Some page text").'
         );
     }
 
@@ -386,6 +474,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getText'))
             ->getMock()
         ;
 
@@ -396,17 +485,22 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('getText')
-            ->will($this->returnValue('Some page text'))
+            ->will($this->onConsecutiveCalls(
+                'void',
+                'Some page text',
+                'Some page text',
+                'Some page text'
+            ))
         ;
 
         $this->assertCorrectAssertion('pageTextMatches', array('/PA.E/i'));
         $this->assertWrongAssertion(
             'pageTextMatches',
-            array('/html/'),
+            array('/html/', 0.15),
             'Behat\\Mink\\Exception\\ResponseTextException',
-            'The pattern /html/ was not found anywhere in the text of the current page.'
+            'The pattern /html/ was not found anywhere in the text of the current page ("Some page text").'
         );
     }
 
@@ -442,6 +536,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getContent'))
             ->getMock()
         ;
 
@@ -452,15 +547,20 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('getContent')
-            ->will($this->returnValue('Some page text'))
+            ->will($this->onConsecutiveCalls(
+                'void',
+                'Some page text',
+                'Some page text',
+                'Some page text'
+            ))
         ;
 
         $this->assertCorrectAssertion('responseContains', array('PAGE text'));
         $this->assertWrongAssertion(
             'responseContains',
-            array('html text'),
+            array('html text', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'The string "html text" was not found anywhere in the HTML response of the current page.'
         );
@@ -498,6 +598,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getContent'))
             ->getMock()
         ;
 
@@ -508,15 +609,20 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('getContent')
-            ->will($this->returnValue('Some page text'))
+            ->will($this->onConsecutiveCalls(
+                'void',
+                'Some page text',
+                'Some page text',
+                'Some page text'
+            ))
         ;
 
         $this->assertCorrectAssertion('responseMatches', array('/PA.E/i'));
         $this->assertWrongAssertion(
             'responseMatches',
-            array('/html/'),
+            array('/html/', 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             'The pattern /html/ was not found anywhere in the HTML response of the page.'
         );
@@ -554,6 +660,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('findall'))
             ->getMock()
         ;
 
@@ -564,7 +671,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(3))
             ->method('findAll')
             ->with('css', 'h2 > span')
             ->will($this->returnValue(array(1, 2)))
@@ -573,7 +680,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('elementsCount', array('css', 'h2 > span', 2));
         $this->assertWrongAssertion(
             'elementsCount',
-            array('css', 'h2 > span', 3),
+            array('css', 'h2 > span', 3, null, 0.15),
             'Behat\\Mink\\Exception\\ExpectationException',
             '2 elements matching css "h2 > span" found on the page, but should be 3.'
         );
