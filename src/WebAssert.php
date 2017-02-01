@@ -264,8 +264,10 @@ class WebAssert
             return (bool) preg_match($regex, $actual);
         };
 
-        $message = sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual);
-        $this->assertResponseText($this->session->getPage()->waitFor($timeout, $callback), $message);
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual)
+        );
     }
 
     /**
