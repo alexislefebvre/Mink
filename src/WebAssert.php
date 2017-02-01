@@ -42,16 +42,23 @@ class WebAssert
     /**
      * Checks that current session address is equals to provided one.
      *
-     * @param string $page
+     * @param string  $page
+     * @param integer $timeout
      *
      * @throws ExpectationException
      */
-    public function addressEquals($page)
+    public function addressEquals($page, $timeout = 10)
     {
         $expected = $this->cleanUrl($page);
-        $actual = $this->getCurrentUrlPath();
+        $actual = null;
 
-        $this->assert($actual === $expected, sprintf('Current page is "%s", but "%s" expected.', $actual, $expected));
+        $this->assert(
+            $this->session->getPage()->waitFor($timeout, function () use (&$actual, $expected) {
+                $actual = $this->getCurrentUrlPath();
+                return $actual === $expected;
+            }),
+            sprintf('Current page is "%s", but "%s" expected.', $actual, $expected)
+        );
     }
 
     /**

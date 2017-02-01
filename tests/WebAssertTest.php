@@ -30,10 +30,25 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressEquals()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $this->session
+            ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
         $this->session
             ->expects($this->exactly(2))
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php/sub/url?param=true#webapp/nav'))
+            ->will($this->onConsecutiveCalls(
+                'nope',
+                'null',
+                'http://example.com/script.php/sub/url?param=true#webapp/nav'
+            ));
         ;
 
         $this->assertCorrectAssertion('addressEquals', array('/sub/url#webapp/nav'));
@@ -47,6 +62,17 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressEqualsEmptyPath()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $this->session
+            ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
         $this->session
             ->expects($this->once())
             ->method('getCurrentUrl')
@@ -58,10 +84,24 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
 
     public function testAddressEqualsEndingInScript()
     {
+        $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
         $this->session
             ->expects($this->exactly(2))
+            ->method('getPage')
+            ->will($this->returnValue($page))
+        ;
+
+        $this->session
             ->method('getCurrentUrl')
-            ->will($this->returnValue('http://example.com/script.php'))
+            ->will($this->onConsecutiveCalls(
+                'nope',
+                'null',
+                'http://example.com/script.php'
+            ));
         ;
 
         $this->assertCorrectAssertion('addressEquals', array('/script.php'));
