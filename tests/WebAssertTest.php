@@ -5,6 +5,26 @@ namespace Behat\Mink\Tests;
 use Behat\Mink\Exception\ExpectationException;
 use Behat\Mink\WebAssert;
 
+/**
+ * Class WebAssertTest
+ * @package Behat\Mink\Tests
+ *
+ * Notes about tests with timeout:
+ *
+ * Calls to assertWrongAssertion() are capped to self::timeoutLimit
+ * in order to avoid the tests to run during 5 seconds.
+ *
+ * Mocks will return the following values, in this order:
+ * 1. something that fail the condition from assertCorrectAssertion()
+ * 2. something that match the condition from assertCorrectAssertion()
+ * 3. something that fail the condition from assertWrongAssertion()
+ * 4. something that match the condition from assertWrongAssertion()
+ *
+ * So mocked methods will be called exactly 4 times.
+ *
+ * Calling ->setMethods(array('…')) is necessary in order to mock
+ * methods called in the callbacks.
+ */
 class WebAssertTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -15,6 +35,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
      * @var WebAssert
      */
     private $assert;
+    const timeoutLimit = 0.11;
 
     public function setUp()
     {
@@ -56,7 +77,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('addressEquals', array('/sub/url#webapp/nav'));
         $this->assertWrongAssertion(
             'addressEquals',
-            array('sub_url', 0.15),
+            array('sub_url', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/sub/url#webapp/nav", but "sub_url" expected.'
         );
@@ -85,7 +106,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
             ))
         ;
 
-        $this->assertCorrectAssertion('addressEquals', array('/', 0.5));
+        $this->assertCorrectAssertion('addressEquals', array('/', 0.15));
     }
 
     public function testAddressEqualsEndingInScript()
@@ -116,7 +137,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('addressEquals', array('/script.php'));
         $this->assertWrongAssertion(
             'addressEquals',
-            array('/', 0.15),
+            array('/', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/script.php", but "/" expected.'
         );
@@ -149,7 +170,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('addressNotEquals', array('sub_url'));
         $this->assertWrongAssertion(
             'addressNotEquals',
-            array('/sub/url', 0.15),
+            array('/sub/url', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/sub/url", but should not be.'
         );
@@ -183,7 +204,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('addressNotEquals', array('/'));
         $this->assertWrongAssertion(
             'addressNotEquals',
-            array('/script.php', 0.15),
+            array('/script.php', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'Current page is "/script.php", but should not be.'
         );
@@ -433,10 +454,10 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
             ))
         ;
 
-        $this->assertCorrectAssertion('pageTextContains', array('PAGE text', 0.5));
+        $this->assertCorrectAssertion('pageTextContains', array('PAGE text'));
         $this->assertWrongAssertion(
             'pageTextContains',
-            array('html text', 0.15),
+            array('html text', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ResponseTextException',
             'The text "html text" was not found anywhere in the text of the current page ("Some page text").'
         );
@@ -498,7 +519,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('pageTextMatches', array('/PA.E/i'));
         $this->assertWrongAssertion(
             'pageTextMatches',
-            array('/html/', 0.15),
+            array('/html/', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ResponseTextException',
             'The pattern /html/ was not found anywhere in the text of the current page ("Some page text").'
         );
@@ -560,7 +581,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('responseContains', array('PAGE text'));
         $this->assertWrongAssertion(
             'responseContains',
-            array('html text', 0.15),
+            array('html text', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'The string "html text" was not found anywhere in the HTML response of the current page.'
         );
@@ -622,7 +643,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('responseMatches', array('/PA.E/i'));
         $this->assertWrongAssertion(
             'responseMatches',
-            array('/html/', 0.15),
+            array('/html/', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'The pattern /html/ was not found anywhere in the HTML response of the page.'
         );
@@ -680,7 +701,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         $this->assertCorrectAssertion('elementsCount', array('css', 'h2 > span', 2));
         $this->assertWrongAssertion(
             'elementsCount',
-            array('css', 'h2 > span', 3, null, 0.15),
+            array('css', 'h2 > span', 3, null, self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             '2 elements matching css "h2 > span" found on the page, but should be 3.'
         );
