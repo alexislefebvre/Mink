@@ -248,12 +248,12 @@ class WebAssert
     /**
      * Checks that current page contains text.
      *
-     * @param string  $text
-     * @param integer $timeout
+     * @param string    $text
+     * @param int|float $timeout
      *
      * @throws ResponseTextException
      */
-    public function pageTextContains($text, $timeout = 10)
+    public function pageTextContains($text, $timeout = 5)
     {
         $regex = '/'.preg_quote($text, '/').'/ui';
         $actual = null;
