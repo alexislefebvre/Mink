@@ -346,11 +346,11 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
             ->will($this->onConsecutiveCalls(
                 'nope',
                 'null',
-                'Some  page\n\ttext'
+                "Some  page\n\ttext"
             ))
         ;
 
-        $this->assertCorrectAssertion('pageTextContains', array('PAGE text'));
+        $this->assertCorrectAssertion('pageTextContains', array('PAGE text', 0.5));
         $this->assertWrongAssertion(
             'pageTextContains',
             array('html text', 0.5),
