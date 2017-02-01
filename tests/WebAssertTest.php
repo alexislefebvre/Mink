@@ -681,7 +681,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
-            ->setMethods(array('findall'))
+            ->setMethods(array('findAll'))
             ->getMock()
         ;
 
@@ -711,6 +711,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('find'))
             ->getMock()
         ;
 
@@ -748,6 +749,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $container = $this->getMockBuilder('Behat\\Mink\\Element\\NodeElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('find'))
             ->getMock()
         ;
 
@@ -756,16 +758,16 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $container
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('find')
             ->with('named', array('element', 'Test'))
-            ->will($this->onConsecutiveCalls(1, null))
+            ->will($this->onConsecutiveCalls(1, null, 1, null))
         ;
 
         $this->assertCorrectAssertion('elementExists', array('named', array('element', 'Test'), $container));
         $this->assertWrongAssertion(
             'elementExists',
-            array('named', array('element', 'Test'), $container),
+            array('named', array('element', 'Test'), $container, self::timeoutLimit),
             'Behat\\Mink\\Exception\\ElementNotFoundException',
             'Element with named "element Test" not found.'
         );
@@ -859,11 +861,13 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('find'))
             ->getMock()
         ;
 
         $element = $this->getMockBuilder('Behat\\Mink\\Element\\NodeElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getText'))
             ->getMock()
         ;
 
@@ -881,15 +885,20 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $element
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(4))
             ->method('getText')
-            ->will($this->returnValue('element text'))
+            ->will($this->onConsecutiveCalls(
+                '',
+                'element text',
+                'html',
+                ''
+            ))
         ;
 
         $this->assertCorrectAssertion('elementTextContains', array('css', 'h2 > span', 'text'));
         $this->assertWrongAssertion(
             'elementTextContains',
-            array('css', 'h2 > span', 'html'),
+            array('css', 'h2 > span', 'html', self::timeoutLimit),
             'Behat\\Mink\\Exception\\ExpectationException',
             'The text "html" was not found in the text of the element matching css "h2 > span".'
         );

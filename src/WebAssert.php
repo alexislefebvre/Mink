@@ -10,7 +10,6 @@
 
 namespace Behat\Mink;
 
-use Behat\Mink\Element\DocumentElement;
 use Behat\Mink\Element\Element;
 use Behat\Mink\Element\ElementInterface;
 use Behat\Mink\Element\NodeElement;
