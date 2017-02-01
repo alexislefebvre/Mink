@@ -330,6 +330,7 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
     {
         $page = $this->getMockBuilder('Behat\\Mink\\Element\\DocumentElement')
             ->disableOriginalConstructor()
+            ->setMethods(array('getText'))
             ->getMock()
         ;
 
@@ -340,17 +341,21 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(2))
+            ->expects($this->any())
             ->method('getText')
-            ->will($this->returnValue("Some  page\n\ttext"))
+            ->will($this->onConsecutiveCalls(
+                'nope',
+                'null',
+                "Some  page\n\ttext"
+            ))
         ;
 
-        $this->assertCorrectAssertion('pageTextContains', array('PAGE text'));
+        $this->assertCorrectAssertion('pageTextContains', array('PAGE text', 0.5));
         $this->assertWrongAssertion(
             'pageTextContains',
-            array('html text'),
+            array('html text', 0.5),
             'Behat\\Mink\\Exception\\ResponseTextException',
-            'The text "html text" was not found anywhere in the text of the current page.'
+            'The text "html text" was not found anywhere in the text of the current page. Found = .'
         );
     }
 

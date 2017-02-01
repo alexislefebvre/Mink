@@ -248,18 +248,26 @@ class WebAssert
     /**
      * Checks that current page contains text.
      *
-     * @param string $text
+     * @param string    $text
+     * @param int|float $timeout
      *
      * @throws ResponseTextException
      */
-    public function pageTextContains($text)
+    public function pageTextContains($text, $timeout = 5)
     {
-        $actual = $this->session->getPage()->getText();
-        $actual = preg_replace('/\s+/u', ' ', $actual);
         $regex = '/'.preg_quote($text, '/').'/ui';
-        $message = sprintf('The text "%s" was not found anywhere in the text of the current page.', $text);
+        $actual = null;
+        $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
+            $actual = $givenNode->getText();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assertResponseText((bool) preg_match($regex, $actual), $message);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The text "%s" was not found anywhere in the text of the current page. Found = %s.', $text, $actual)
+        );
     }
 
     /**
