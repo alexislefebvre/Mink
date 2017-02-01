@@ -47,7 +47,7 @@ class WebAssert
      *
      * @throws ExpectationException
      */
-    public function addressEquals($page, $timeout = 3)
+    public function addressEquals($page, $timeout = 10)
     {
         $expected = $this->cleanUrl($page);
         $actual = null;
