@@ -722,17 +722,22 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
         ;
 
         $page
-            ->expects($this->exactly(7))
+            ->expects($this->exactly(8))
             ->method('find')
             ->with('css', 'h2 > span')
             ->will($this->onConsecutiveCalls(
-                1,
+                // assertCorrectAssertion().
                 null,
                 1,
+                // assertWrongAssertion().
                 null,
+                null,
+                // assertCorrectAssertion().
                 null,
                 1,
-                1
+                // assertWrongAssertion().
+                null,
+                null
             ))
         ;
 
@@ -1465,8 +1470,6 @@ class WebAssertTest extends \PHPUnit_Framework_TestCase
             throw new \LogicException('Wrong expected exception for the failed assertion. It should be a Behat\Mink\Exception\ExpectationException.');
         }
 
-//        call_user_func_array(array($this->assert, $assertion), $arguments);
-//        return;
         try {
             call_user_func_array(array($this->assert, $assertion), $arguments);
             $this->fail('Wrong assertion should throw an exception');
