@@ -714,7 +714,7 @@ class WebAssert
         };
 
         if (null === $node = $container->waitFor($timeout, $callback)) {
-            throw new ElementNotFoundException($this->session, 'form field', 'id|name|label|value', $field);
+            throw new ElementNotFoundException($this->session->getDriver(), 'form field', 'id|name|label|value', $field);
         }
 
         return $node;
