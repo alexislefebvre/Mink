@@ -1,3 +1,17 @@
+1.7.2 / 2017-MM-DD
+==================
+
+New features:
+
+* Added timeouts to the following methods in `src/WebAssert.php`, conditions will be evaluated every 0.1 second during 
+  5 seconds, by using callbacks with `Element::waitFor();`
+  * `addressEquals()` and `addressNotEquals()`
+  * `pageTextContains()` and `pageTextMatches()`
+  * `responseContains()` and `responseMatches()`
+  * `elementsCount()`, `elementExists()`, `elementTextContains()` and `elementContains()`
+  * `elementAttributeExists()` and `elementAttributeContains()`
+  , `fieldExists()` and `fieldValueEquals()`
+
 1.7.1 / 2016-03-05
 ==================
 

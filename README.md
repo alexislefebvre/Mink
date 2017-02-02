@@ -55,6 +55,12 @@ echo $mink->getSession('custom')->getPage()->getContent();
 // this all is done to make possible mixing sessions
 $mink->getSession('goutte1')->getPage()->findLink('Chat')->click();
 $mink->getSession('goutte2')->getPage()->findLink('Chat')->click();
+
+// assertions
+// without timeout
+$mink->assertSession('goutte1')->addressEquals('/sub/url', 0);
+// with a timeout of 3 seconds
+$mink->assertSession('goutte1')->addressEquals('/sub/url', 3);
 ```
 
 Install Dependencies

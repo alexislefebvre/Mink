@@ -14,11 +14,11 @@ use Behat\Mink\Element\Element;
 use Behat\Mink\Element\ElementInterface;
 use Behat\Mink\Element\NodeElement;
 use Behat\Mink\Element\TraversableElement;
+use Behat\Mink\Exception\ElementHtmlException;
 use Behat\Mink\Exception\ElementNotFoundException;
+use Behat\Mink\Exception\ElementTextException;
 use Behat\Mink\Exception\ExpectationException;
 use Behat\Mink\Exception\ResponseTextException;
-use Behat\Mink\Exception\ElementHtmlException;
-use Behat\Mink\Exception\ElementTextException;
 
 /**
  * Mink web assertions tool.
@@ -27,6 +27,8 @@ use Behat\Mink\Exception\ElementTextException;
  */
 class WebAssert
 {
+    /** Maximal allowed waiting time in seconds. */
+    const TIMEOUT = 5;
     protected $session;
 
     /**
@@ -42,31 +44,45 @@ class WebAssert
     /**
      * Checks that current session address is equals to provided one.
      *
-     * @param string $page
+     * @param string    $page
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function addressEquals($page)
+    public function addressEquals($page, $timeout = self::TIMEOUT)
     {
-        $expected = $this->cleanUrl($page);
-        $actual = $this->getCurrentUrlPath();
+        $cleanedUrl = $this->cleanUrl($page);
+        $actual = null;
 
-        $this->assert($actual === $expected, sprintf('Current page is "%s", but "%s" expected.', $actual, $expected));
+        $this->assert(
+            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl, &$actual) {
+                $actual = $this->getCurrentUrlPath();
+
+                return $actual === $cleanedUrl;
+            }), sprintf('Current page is "%s", but "%s" expected.', $actual, $cleanedUrl)
+        );
     }
 
     /**
      * Checks that current session address is not equals to provided one.
      *
-     * @param string $page
+     * @param string    $page
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function addressNotEquals($page)
+    public function addressNotEquals($page, $timeout = self::TIMEOUT)
     {
-        $expected = $this->cleanUrl($page);
-        $actual = $this->getCurrentUrlPath();
+        $cleanedUrl = $this->cleanUrl($page);
+        $actual = null;
 
-        $this->assert($actual !== $expected, sprintf('Current page is "%s", but should not be.', $actual));
+        $this->assert(
+            $this->session->getPage()->waitFor($timeout, function () use ($cleanedUrl, &$actual) {
+                $actual = $this->getCurrentUrlPath();
+
+                return $actual !== $cleanedUrl;
+            }), sprintf('Current page is "%s", but should not be.', $actual)
+        );
     }
 
     /**
@@ -248,18 +264,26 @@ class WebAssert
     /**
      * Checks that current page contains text.
      *
-     * @param string $text
+     * @param string    $text
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ResponseTextException
      */
-    public function pageTextContains($text)
+    public function pageTextContains($text, $timeout = self::TIMEOUT)
     {
-        $actual = $this->session->getPage()->getText();
-        $actual = preg_replace('/\s+/u', ' ', $actual);
+        $actual = null;
         $regex = '/'.preg_quote($text, '/').'/ui';
-        $message = sprintf('The text "%s" was not found anywhere in the text of the current page.', $text);
+        $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
+            $actual = $givenNode->getText();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assertResponseText((bool) preg_match($regex, $actual), $message);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The text "%s" was not found anywhere in the text of the current page ("%s").', $text, $actual)
+        );
     }
 
     /**
@@ -282,16 +306,24 @@ class WebAssert
     /**
      * Checks that current page text matches regex.
      *
-     * @param string $regex
+     * @param string    $regex
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ResponseTextException
      */
-    public function pageTextMatches($regex)
+    public function pageTextMatches($regex, $timeout = self::TIMEOUT)
     {
-        $actual = $this->session->getPage()->getText();
-        $message = sprintf('The pattern %s was not found anywhere in the text of the current page.', $regex);
+        $actual = null;
+        $callback = function (ElementInterface $givenNode) use ($regex, &$actual) {
+            $actual = $givenNode->getText();
 
-        $this->assertResponseText((bool) preg_match($regex, $actual), $message);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $this->assertResponseText(
+            $this->session->getPage()->waitFor($timeout, $callback),
+            sprintf('The pattern %s was not found anywhere in the text of the current page ("%s").', $regex, $actual)
+        );
     }
 
     /**
@@ -312,17 +344,23 @@ class WebAssert
     /**
      * Checks that page HTML (response content) contains text.
      *
-     * @param string $text
+     * @param string    $text
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function responseContains($text)
+    public function responseContains($text, $timeout = self::TIMEOUT)
     {
-        $actual = $this->session->getPage()->getContent();
         $regex = '/'.preg_quote($text, '/').'/ui';
         $message = sprintf('The string "%s" was not found anywhere in the HTML response of the current page.', $text);
+        $callback = function (ElementInterface $givenNode) use ($regex) {
+            $actual = $givenNode->getContent();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assert((bool) preg_match($regex, $actual), $message);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $this->assert($this->session->getPage()->waitFor($timeout, $callback), $message);
     }
 
     /**
@@ -344,16 +382,22 @@ class WebAssert
     /**
      * Checks that page HTML (response content) matches regex.
      *
-     * @param string $regex
+     * @param string    $regex
+     * @param int|float $timeout maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function responseMatches($regex)
+    public function responseMatches($regex, $timeout = self::TIMEOUT)
     {
-        $actual = $this->session->getPage()->getContent();
         $message = sprintf('The pattern %s was not found anywhere in the HTML response of the page.', $regex);
+        $callback = function (ElementInterface $givenNode) use ($regex) {
+            $actual = $givenNode->getContent();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assert((bool) preg_match($regex, $actual), $message);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $this->assert($this->session->getPage()->waitFor($timeout, $callback), $message);
     }
 
     /**
@@ -378,22 +422,28 @@ class WebAssert
      * @param string|array     $selector     element selector
      * @param int              $count        expected count
      * @param ElementInterface $container    document to check against
+     * @param int|float        $timeout      maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function elementsCount($selectorType, $selector, $count, ElementInterface $container = null)
+    public function elementsCount($selectorType, $selector, $count, ElementInterface $container = null, $timeout = self::TIMEOUT)
     {
         $container = $container ?: $this->session->getPage();
-        $nodes = $container->findAll($selectorType, $selector);
+        $nodes = [];
+        $callback = function (ElementInterface $givenNode) use ($count, $selectorType, $selector, &$nodes) {
+            $nodes = $givenNode->findAll($selectorType, $selector);
 
+            return intval($count) === count($nodes);
+        };
+        $result = $container->waitFor($timeout, $callback);
         $message = sprintf(
             '%d %s found on the page, but should be %d.',
             count($nodes),
-            $this->getMatchingElementRepresentation($selectorType, $selector, count($nodes) !== 1),
+            $this->getMatchingElementRepresentation($selectorType, $selector, count($nodes) > 1),
             $count
         );
 
-        $this->assert(intval($count) === count($nodes), $message);
+        $this->assert((bool) $result, $message);
     }
 
     /**
@@ -402,17 +452,23 @@ class WebAssert
      * @param string           $selectorType element selector type (css, xpath)
      * @param string|array     $selector     element selector
      * @param ElementInterface $container    document to check against
+     * @param int|float        $timeout      maximal allowed waiting time in seconds
      *
      * @return NodeElement
      *
      * @throws ElementNotFoundException
      */
-    public function elementExists($selectorType, $selector, ElementInterface $container = null)
+    public function elementExists($selectorType, $selector, ElementInterface $container = null, $timeout = self::TIMEOUT)
     {
         $container = $container ?: $this->session->getPage();
-        $node = $container->find($selectorType, $selector);
+        $nodes = [];
+        $callback = function (ElementInterface $givenNode) use ($selectorType, $selector, &$nodes) {
+            $node = $givenNode->find($selectorType, $selector);
 
-        if (null === $node) {
+            return $node;
+        };
+
+        if (null === $node = $container->waitFor($timeout, $callback)) {
             if (is_array($selector)) {
                 $selector = implode(' ', $selector);
             }
@@ -451,22 +507,27 @@ class WebAssert
      * @param string       $selectorType element selector type (css, xpath)
      * @param string|array $selector     element selector
      * @param string       $text         expected text
+     * @param int|float    $timeout      maximal allowed waiting time in seconds
      *
      * @throws ElementTextException
      */
-    public function elementTextContains($selectorType, $selector, $text)
+    public function elementTextContains($selectorType, $selector, $text, $timeout = self::TIMEOUT)
     {
-        $element = $this->elementExists($selectorType, $selector);
-        $actual = $element->getText();
         $regex = '/'.preg_quote($text, '/').'/ui';
-
         $message = sprintf(
             'The text "%s" was not found in the text of the %s.',
             $text,
             $this->getMatchingElementRepresentation($selectorType, $selector)
         );
+        $callback = function (ElementInterface $givenNode) use ($regex) {
+            $actual = $givenNode->getText();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assertElementText((bool) preg_match($regex, $actual), $message, $element);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $element = $this->elementExists($selectorType, $selector);
+        $this->assertResponseText($element->waitFor($timeout, $callback), $message);
     }
 
     /**
@@ -499,22 +560,27 @@ class WebAssert
      * @param string       $selectorType element selector type (css, xpath)
      * @param string|array $selector     element selector
      * @param string       $html         expected text
+     * @param int|float    $timeout      maximal allowed waiting time in seconds
      *
      * @throws ElementHtmlException
      */
-    public function elementContains($selectorType, $selector, $html)
+    public function elementContains($selectorType, $selector, $html, $timeout = self::TIMEOUT)
     {
-        $element = $this->elementExists($selectorType, $selector);
-        $actual = $element->getHtml();
         $regex = '/'.preg_quote($html, '/').'/ui';
-
         $message = sprintf(
             'The string "%s" was not found in the HTML of the %s.',
             $html,
             $this->getMatchingElementRepresentation($selectorType, $selector)
         );
+        $callback = function (ElementInterface $givenNode) use ($regex) {
+            $actual = $givenNode->getHtml();
+            $actual = preg_replace('/\s+/u', ' ', $actual);
 
-        $this->assertElement((bool) preg_match($regex, $actual), $message, $element);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $element = $this->elementExists($selectorType, $selector);
+        $this->assertElement($element->waitFor($timeout, $callback), $message, $element);
     }
 
     /**
@@ -547,22 +613,25 @@ class WebAssert
      * @param string       $selectorType
      * @param string|array $selector
      * @param string       $attribute
+     * @param int|float    $timeout      maximal allowed waiting time in seconds
      *
      * @return NodeElement
      *
      * @throws ElementHtmlException
      */
-    public function elementAttributeExists($selectorType, $selector, $attribute)
+    public function elementAttributeExists($selectorType, $selector, $attribute, $timeout = self::TIMEOUT)
     {
-        $element = $this->elementExists($selectorType, $selector);
-
         $message = sprintf(
             'The attribute "%s" was not found in the %s.',
             $attribute,
             $this->getMatchingElementRepresentation($selectorType, $selector)
         );
+        $callback = function (ElementInterface $givenNode) use ($attribute) {
+            return $givenNode->hasAttribute($attribute);
+        };
 
-        $this->assertElement($element->hasAttribute($attribute), $message, $element);
+        $element = $this->elementExists($selectorType, $selector);
+        $this->assertElement($element->waitFor($timeout, $callback), $message, $element);
 
         return $element;
     }
@@ -574,10 +643,11 @@ class WebAssert
      * @param string|array $selector
      * @param string       $attribute
      * @param string       $text
+     * @param int|float    $timeout      maximal allowed waiting time in seconds
      *
      * @throws ElementHtmlException
      */
-    public function elementAttributeContains($selectorType, $selector, $attribute, $text)
+    public function elementAttributeContains($selectorType, $selector, $attribute, $text, $timeout = self::TIMEOUT)
     {
         $element = $this->elementAttributeExists($selectorType, $selector, $attribute);
         $actual = $element->getAttribute($attribute);
@@ -589,8 +659,14 @@ class WebAssert
             $attribute,
             $this->getMatchingElementRepresentation($selectorType, $selector)
         );
+        $callback = function (ElementInterface $givenNode) use ($regex, $attribute) {
+            $actual = $givenNode->getAttribute($attribute);
 
-        $this->assertElement((bool) preg_match($regex, $actual), $message, $element);
+            return (bool) preg_match($regex, $actual);
+        };
+
+        $element = $this->elementAttributeExists($selectorType, $selector, $attribute);
+        $this->assertElement($element->waitFor($timeout, $callback), $message, $element);
     }
 
     /**
@@ -624,17 +700,22 @@ class WebAssert
      *
      * @param string             $field     field id|name|label|value
      * @param TraversableElement $container document to check against
+     * @param int|float          $timeout   maximal allowed waiting time in seconds
      *
      * @return NodeElement
      *
      * @throws ElementNotFoundException
      */
-    public function fieldExists($field, TraversableElement $container = null)
+    public function fieldExists($field, TraversableElement $container = null, $timeout = self::TIMEOUT)
     {
         $container = $container ?: $this->session->getPage();
-        $node = $container->findField($field);
+        $callback = function (ElementInterface $givenNode) use ($field) {
+            $node = $givenNode->findField($field);
 
-        if (null === $node) {
+            return $node;
+        };
+
+        if (null === $node = $container->waitFor($timeout, $callback)) {
             throw new ElementNotFoundException($this->session->getDriver(), 'form field', 'id|name|label|value', $field);
         }
 
@@ -663,18 +744,23 @@ class WebAssert
      * @param string             $field     field id|name|label|value
      * @param string             $value     field value
      * @param TraversableElement $container document to check against
+     * @param int|float          $timeout   maximal allowed waiting time in seconds
      *
      * @throws ExpectationException
      */
-    public function fieldValueEquals($field, $value, TraversableElement $container = null)
+    public function fieldValueEquals($field, $value, TraversableElement $container = null, $timeout = self::TIMEOUT)
     {
         $node = $this->fieldExists($field, $container);
-        $actual = $node->getValue();
         $regex = '/^'.preg_quote($value, '/').'$/ui';
+        $message = null;
+        $callback = function (ElementInterface $givenNode) use ($regex, &$message, $field, $value) {
+            $actual = $givenNode->getValue();
+            $message = sprintf('The field "%s" value is "%s", but "%s" expected.', $field, $actual, $value);
 
-        $message = sprintf('The field "%s" value is "%s", but "%s" expected.', $field, $actual, $value);
+            return (bool) preg_match($regex, $actual);
+        };
 
-        $this->assert((bool) preg_match($regex, $actual), $message);
+        $this->assert($node->waitFor($timeout, $callback), $message);
     }
 
     /**
@@ -834,7 +920,7 @@ class WebAssert
     {
         $pluralization = $plural ? 's' : '';
 
-        if (in_array($selectorType, array('named', 'named_exact', 'named_partial'))
+        if (in_array($selectorType, ['named', 'named_exact', 'named_partial'])
             && is_array($selector) && 2 === count($selector)
         ) {
             return sprintf('%s%s matching locator "%s"', $selector[0], $pluralization, $selector[1]);
